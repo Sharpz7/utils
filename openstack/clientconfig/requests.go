@@ -316,7 +316,10 @@ func GetCloudFromYAML(opts *ClientOpts) (*Cloud, error) {
 	if opts.RegionName != "" {
 		for _, v := range cloud.Regions {
 			if opts.RegionName == v.Name {
-				cloud, err = mergeClouds(v.Values, cloud)
+				// Region values of null leave the cloud-level default intact, as in openstacksdk.
+				values := v.Values
+				values.nullDefaultMicroversions = nil
+				cloud, err = mergeClouds(values, cloud)
 				break
 			}
 		}

@@ -51,7 +51,9 @@ types become underscores in configuration keys. Canonical types and aliases are
 accepted; block_storage_default_microversion, block_store_default_microversion,
 volume_default_microversion, volumev2_default_microversion and
 volumev3_default_microversion all configure block storage. Canonical names take
-precedence, followed by aliases in gophercloud.ServiceTypeAliases order.
+precedence, followed by aliases in OpenStack Service Types Authority order.
+For Cinder this is volumev3, volumev2, volume, then block-store. YAML null defaults
+are skipped during lookup, while an explicitly empty string clears the default.
 
 Defaults survive profile, secure.yaml and regional configuration merging.
 ClientOpts.Microversion overrides the configured service default. An unset or

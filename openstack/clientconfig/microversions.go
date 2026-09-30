@@ -22,7 +22,15 @@ func (c *Cloud) UnmarshalYAML(unmarshal func(any) error) error {
 		return err
 	}
 	for key, node := range fields {
-		if service, ok := strings.CutSuffix(key, defaultMicroversionSuffix); ok && service != "" {
+		if service, ok := strings.CutSuffix(strings.ReplaceAll(key, "-", "_"), defaultMicroversionSuffix); ok && service != "" {
+			service = strings.ReplaceAll(service, "_", "-")
+			if node.Tag == "!!null" {
+				if value.nullDefaultMicroversions == nil {
+					value.nullDefaultMicroversions = make(map[string]bool)
+				}
+				value.nullDefaultMicroversions[service] = true
+				continue
+			}
 			var version string
 			if err := node.Decode(&version); err != nil {
 				return err
@@ -30,7 +38,7 @@ func (c *Cloud) UnmarshalYAML(unmarshal func(any) error) error {
 			if value.DefaultMicroversions == nil {
 				value.DefaultMicroversions = make(map[string]string)
 			}
-			value.DefaultMicroversions[strings.ReplaceAll(service, "_", "-")] = version
+			value.DefaultMicroversions[service] = version
 		}
 	}
 	*c = Cloud(value)
@@ -40,13 +48,16 @@ func (c *Cloud) UnmarshalYAML(unmarshal func(any) error) error {
 // MarshalYAML keeps service defaults in the clouds.yaml format.
 func (c Cloud) MarshalYAML() (any, error) {
 	type plain Cloud
-	fields := make(map[string]string, len(c.DefaultMicroversions))
+	fields := make(map[string]any, len(c.DefaultMicroversions)+len(c.nullDefaultMicroversions))
+	for service := range c.nullDefaultMicroversions {
+		fields[strings.ReplaceAll(service, "-", "_")+defaultMicroversionSuffix] = nil
+	}
 	for service, version := range c.DefaultMicroversions {
 		fields[strings.ReplaceAll(service, "-", "_")+defaultMicroversionSuffix] = version
 	}
 	return struct {
-		Cloud    plain             `yaml:",inline"`
-		Defaults map[string]string `yaml:",inline"`
+		Cloud    plain          `yaml:",inline"`
+		Defaults map[string]any `yaml:",inline"`
 	}{plain(c), fields}, nil
 }
 
@@ -60,6 +71,9 @@ func (c Cloud) MarshalJSON() ([]byte, error) {
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fields); err != nil {
 		return nil, err
+	}
+	for service := range c.nullDefaultMicroversions {
+		fields[strings.ReplaceAll(service, "-", "_")+defaultMicroversionSuffix] = json.RawMessage("null")
 	}
 	for service, version := range c.DefaultMicroversions {
 		data, err := json.Marshal(version)
@@ -83,7 +97,15 @@ func (c *Cloud) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	for key, data := range fields {
-		if service, ok := strings.CutSuffix(key, defaultMicroversionSuffix); ok && service != "" {
+		if service, ok := strings.CutSuffix(strings.ReplaceAll(key, "-", "_"), defaultMicroversionSuffix); ok && service != "" {
+			service = strings.ReplaceAll(service, "_", "-")
+			if strings.TrimSpace(string(data)) == "null" {
+				if value.nullDefaultMicroversions == nil {
+					value.nullDefaultMicroversions = make(map[string]bool)
+				}
+				value.nullDefaultMicroversions[service] = true
+				continue
+			}
 			var version string
 			if err := json.Unmarshal(data, &version); err != nil {
 				return err
@@ -91,7 +113,7 @@ func (c *Cloud) UnmarshalJSON(data []byte) error {
 			if value.DefaultMicroversions == nil {
 				value.DefaultMicroversions = make(map[string]string)
 			}
-			value.DefaultMicroversions[strings.ReplaceAll(service, "_", "-")] = version
+			value.DefaultMicroversions[service] = version
 		}
 	}
 	*c = Cloud(value)
@@ -100,8 +122,14 @@ func (c *Cloud) UnmarshalJSON(data []byte) error {
 
 // DefaultMicroversion resolves the official service name before its aliases.
 func (c Cloud) DefaultMicroversion(serviceType string) string {
+	serviceType = strings.ReplaceAll(serviceType, "_", "-")
 	types := gophercloud.EndpointOpts{Type: serviceType}
 	types.ApplyDefaults(serviceType)
+	// Released Gophercloud versions list Cinder aliases in a different order.
+	// Follow os-service-types priority for configuration lookup.
+	if types.Type == "block-storage" {
+		types.Aliases = []string{"volumev3", "volumev2", "volume", "block-store"}
+	}
 	for _, service := range types.Types() {
 		if version, ok := c.DefaultMicroversions[service]; ok {
 			return version
