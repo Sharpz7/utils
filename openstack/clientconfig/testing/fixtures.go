@@ -51,13 +51,13 @@ var PhiladelphiaComplexPhl1CloudYAML = clientconfig.Cloud{
 		Password:    "password",
 		ProjectName: "Some Project",
 	},
-	ComputeDefaultMicroversion: "2.79",
+	DefaultMicroversions: map[string]string{"compute": "2.79"},
 	Regions: []clientconfig.Region{
 		{
 			Name: "PHL1",
 			Values: clientconfig.Cloud{
-				AuthInfo:                   &clientconfig.AuthInfo{AuthURL: "https://phl1.example.com:5000/v3"},
-				ComputeDefaultMicroversion: "2.79",
+				AuthInfo:             &clientconfig.AuthInfo{AuthURL: "https://phl1.example.com:5000/v3"},
+				DefaultMicroversions: map[string]string{"compute": "2.79"},
 			},
 		},
 		{
@@ -75,13 +75,13 @@ var PhiladelphiaComplexPhl2CloudYAML = clientconfig.Cloud{
 		Password:    "password",
 		ProjectName: "Some Project",
 	},
-	ComputeDefaultMicroversion: "2.87",
+	DefaultMicroversions: map[string]string{"compute": "2.87"},
 	Regions: []clientconfig.Region{
 		{
 			Name: "PHL1",
 			Values: clientconfig.Cloud{
-				AuthInfo:                   &clientconfig.AuthInfo{AuthURL: "https://phl1.example.com:5000/v3"},
-				ComputeDefaultMicroversion: "2.79",
+				AuthInfo:             &clientconfig.AuthInfo{AuthURL: "https://phl1.example.com:5000/v3"},
+				DefaultMicroversions: map[string]string{"compute": "2.79"},
 			},
 		},
 		{
@@ -178,8 +178,8 @@ var ChicagoCloudUseProfileYAML = clientconfig.Cloud{
 }
 
 var HawaiiCloudYAML = clientconfig.Cloud{
-	RegionName:                 "HNL",
-	ComputeDefaultMicroversion: "2.87",
+	RegionName:           "HNL",
+	DefaultMicroversions: map[string]string{"compute": "2.87"},
 	AuthInfo: &clientconfig.AuthInfo{
 		AuthURL:     "https://hi.example.com:5000/v3",
 		Username:    "jdoe",

@@ -71,6 +71,9 @@ type ClientOpts struct {
 	// admin endpoint of a service.
 	EndpointType string
 
+	// Microversion explicitly overrides the clouds.yaml service default.
+	Microversion string
+
 	// HTTPClient provides the ability customize the ProviderClient's
 	// internal HTTP client.
 	HTTPClient *http.Client
@@ -911,6 +914,18 @@ func NewServiceClient(ctx context.Context, service string, opts *ClientOpts) (*g
 		Availability: GetEndpointType(endpointType),
 	}
 
+	sc, err := newServiceClient(service, pClient, eo, cloud)
+	if err != nil {
+		return nil, err
+	}
+	sc.Microversion = opts.Microversion
+	if sc.Microversion == "" {
+		sc.Microversion = cloud.DefaultMicroversion(sc.Type)
+	}
+	return sc, nil
+}
+
+func newServiceClient(service string, pClient *gophercloud.ProviderClient, eo gophercloud.EndpointOpts, cloud *Cloud) (*gophercloud.ServiceClient, error) {
 	switch service {
 	case "baremetal":
 		return openstack.NewBareMetalV1(pClient, eo)

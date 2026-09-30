@@ -29,8 +29,8 @@ var HawaiiExpected = `clouds:
             project_name: Some Project
             domain_name: default
         region_name: HNL
-        compute_default_microversion: "2.87"
         verify: true
+        compute_default_microversion: "2.87"
 `
 
 func TestMarshallCloudToYaml(t *testing.T) {
